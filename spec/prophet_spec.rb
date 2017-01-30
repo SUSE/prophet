@@ -520,6 +520,27 @@ describe Prophet do
         it { is_expected.to be_falsy }
       end
     end
+
+    describe '?run_necessary?' do
+      subject { prophet.send :run_necessary? }
+      before do
+        prophet.instance_variable_set :@request, request
+        allow(request.content).to receive(:title)
+
+        prophet.instance_variable_set :@github, @github
+        allow(@github).to receive(:commits).and_return([double(:commit, sha: '123')])
+        allow(@github).to receive(:issue_comments).and_return([])
+      end
+
+      context 'with unmergeable PR and empty statuses' do
+        before do
+          expect(@github).to receive(:status).and_return(double(:status, statuses: []))
+          expect(request.content).to receive(:mergeable).twice.and_return false
+        end
+
+        it { is_expected.to be_falsy }
+      end
+    end
   end
 
 end
