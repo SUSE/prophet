@@ -23,7 +23,7 @@ Gem::Specification.new do |s|
   s.description += 'give you an outlook on the future state of your repository '
   s.description += 'in case you accept the request and merge the code.'
 
-  s.add_runtime_dependency 'faraday_middleware', '= 0.9.0'
-  s.add_runtime_dependency 'faraday', '= 0.8.8'
-  s.add_runtime_dependency 'octokit', '~> 3.8'
+  s.add_runtime_dependency 'faraday_middleware', '~> 0.11.0'
+  s.add_runtime_dependency 'faraday', '~> 0.11.0'
+  s.add_runtime_dependency 'octokit', '~> 4.0'
 end
