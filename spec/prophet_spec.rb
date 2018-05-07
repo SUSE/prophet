@@ -542,21 +542,12 @@ describe Prophet do
 
         it { is_expected.to be_falsy }
       end
-    end
-  end
 
-  describe '#run_necessary?' do
-    subject { prophet.send :run_necessary? }
+      context 'request comes from a fork' do
+        before { request.from_fork = true }
 
-    before do
-      prophet.instance_variable_set :@request, request
-      allow(@api_response).to receive(:title)
-    end
-
-    context 'request comes from a fork' do
-      before { request.from_fork = true }
-
-      it { is_expected.to eq false }
+        it { is_expected.to eq false }
+      end
     end
   end
 end
