@@ -16,6 +16,7 @@ describe Prophet do
     @api_response.stub(:number).and_return(request_id)
     @api_response.stub_chain(:head, :sha).and_return('pull_head_sha')
     @api_response.stub_chain(:head, :repo, :fork).and_return(false)
+    @api_response.stub(:labels).and_return([])
     @project = 'user/project'
     prophet.prepare_block = lambda { }
     prophet.exec_block = lambda { }
