@@ -167,7 +167,8 @@ class Prophet
   # - the pull request does not originate from a fork (to avoid malicious code execution on CI machines)
   def run_necessary?
     logger.info "Checking pull request ##{@request.id}: #{@request.content.title}"
-    unless @request.from_fork
+
+    unless @request.from_fork || @request.wip
       # Compare current sha ids of target and source branch with those from the last test run.
       @request.target_head_sha = @github.commits(@project).first.sha
       comments = @github.issue_comments(@project, @request.id)
