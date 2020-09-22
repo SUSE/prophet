@@ -115,7 +115,14 @@ describe Prophet do
         "context" => "prophet/default",
         "target_url" => nil
       }
-    ).twice
+    ).once
+    @github.should_receive(:create_status).with(
+        @project, request.head_sha, :success, {
+        "description" => "Prophet reports success. (Merged pull_head_sha into )",
+        "context" => "prophet/default",
+        "target_url" => nil
+    }
+    ).once
     prophet.should_receive(:switch_branch_to_merged_state).and_return(true)
     prophet.should_receive :switch_branch_back
     prophet.should_receive :comment_on_github
@@ -132,7 +139,14 @@ describe Prophet do
         "context" => "prophet/default",
         "target_url" => nil
       }
-    ).twice
+    ).once
+    @github.should_receive(:create_status).with(
+        @project, request.head_sha, :success, {
+        "description" => "Prophet reports success. (Merged pull_head_sha into )",
+        "context" => "prophet/default",
+        "target_url" => nil
+    }
+    ).once
     prophet.should_receive(:switch_branch_to_merged_state).and_return(true)
     prophet.should_receive :switch_branch_back
     prophet.should_receive :comment_on_github
