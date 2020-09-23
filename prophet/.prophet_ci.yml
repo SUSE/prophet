@@ -1,0 +1,3 @@
+projects:
+  connect:
+    rspec: bundle.ruby2.5 exec rspec spec

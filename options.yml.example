@@ -1,0 +1,8 @@
+default:
+  # The GitHub username and password for successful runs
+  username_pass: USERNAME
+  access_token_pass: TOKEN
+
+  # The GitHub username and token for failed runs
+  username_fail: USERNAME
+  access_token_fail: TOKEN
