@@ -19,11 +19,9 @@ describe Prophet do
     @api_response.stub(:labels).and_return([])
     @project = 'user/project'
     prophet.prepare_block = lambda { }
-    prophet.exec_block = lambda { }
+    prophet.exec_block = lambda { `/bin/true` }
     # Stub external dependency @gitconfig (local file).
     prophet.stub(:git_config).and_return(
-      'github.login' => 'default_login',
-      'github.password' => 'default_password',
       'remote.origin.url' => 'git@github.com:user/project.git'
     )
     # Stub external dependency @github (remote server).
@@ -31,6 +29,9 @@ describe Prophet do
     Octokit::Client.stub(:new).and_return(@github)
     @github.stub :login
     @github.stub(:api_version).and_return('3')
+    user = double :user
+    user.stub(:login).and_return('foo_user')
+    @github.stub(:user).and_return(user)
     @github.stub(:repo).with(@project)
   end
 
@@ -72,6 +73,10 @@ describe Prophet do
   end
 
   it 'runs your code when either source or target branch have changed' do
+    config_block = lambda do |config|
+      config.username_pass = 'default_login'
+    end
+    config_block.call prophet
     prophet.should_receive(:pull_requests).and_return([request])
     @api_response.should_receive :title
     @api_response.should_receive(:mergeable).and_return(true)
@@ -115,7 +120,14 @@ describe Prophet do
         "context" => "prophet/default",
         "target_url" => nil
       }
-    ).twice
+    ).once
+    @github.should_receive(:create_status).with(
+        @project, request.head_sha, :success, {
+        "description" => "Prophet reports success. (Merged pull_head_sha into )",
+        "context" => "prophet/default",
+        "target_url" => nil
+    }
+    ).once
     prophet.should_receive(:switch_branch_to_merged_state).and_return(true)
     prophet.should_receive :switch_branch_back
     prophet.should_receive :comment_on_github
@@ -132,7 +144,14 @@ describe Prophet do
         "context" => "prophet/default",
         "target_url" => nil
       }
-    ).twice
+    ).once
+    @github.should_receive(:create_status).with(
+        @project, request.head_sha, :success, {
+        "description" => "Prophet reports success. (Merged pull_head_sha into )",
+        "context" => "prophet/default",
+        "target_url" => nil
+    }
+    ).once
     prophet.should_receive(:switch_branch_to_merged_state).and_return(true)
     prophet.should_receive :switch_branch_back
     prophet.should_receive :comment_on_github
@@ -252,7 +271,7 @@ describe Prophet do
 
   it 'uses two different users for commenting (success/failure)' do
     config_block = lambda do |config|
-      config.username = 'username'
+      config.username_pass = 'username'
       config.username_fail = 'username_fail'
     end
     config_block.call prophet
@@ -313,6 +332,10 @@ describe Prophet do
   end
 
   it 'deletes obsolete comments whenever the request is no longer mergeable' do
+    config_block = lambda do |config|
+      config.username_pass = 'default_login'
+    end
+    config_block.call prophet
     prophet.should_receive(:pull_requests).and_return([request])
     @api_response.should_receive :title
     @api_response.should_receive(:mergeable).twice.and_return(false)
@@ -341,6 +364,10 @@ describe Prophet do
   end
 
   it 'tries to determine whether the request is mergeable if GitHub won\'t tell' do
+    config_block = lambda do |config|
+      config.username_pass = 'default_login'
+    end
+    config_block.call prophet
     prophet.should_receive(:pull_requests).and_return([request])
     @api_response.should_receive :title
     @api_response.should_receive(:mergeable).twice.and_return(nil)
@@ -391,31 +418,20 @@ describe Prophet do
     prophet.run
   end
 
-  it 'populates configuration variables with default values' do
-    @github.should_receive(:pulls).with(@project, {state: "open"}).and_return([])
-    prophet.run
-    prophet.username.should == 'default_login'
-    prophet.password.should == 'default_password'
-    prophet.username_fail.should == 'default_login'
-    prophet.password_fail.should == 'default_password'
-    prophet.rerun_on_source_change.should be(true)
-    prophet.rerun_on_target_change.should be(true)
-  end
-
   it 'respects configuration values if set manually' do
     config_block = lambda do |config|
-      config.username = 'username'
-      config.password = 'password'
+      config.username_pass = 'username'
+      config.access_token_pass = 'token'
       config.username_fail = 'username_fail'
-      config.password_fail = 'password_fail'
+      config.access_token_fail = 'token_fail'
       config.rerun_on_source_change = false
       config.rerun_on_target_change = false
     end
     config_block.call prophet
-    prophet.username.should == 'username'
-    prophet.password.should == 'password'
+    prophet.username_pass.should == 'username'
+    prophet.access_token_pass.should == 'token'
     prophet.username_fail.should == 'username_fail'
-    prophet.password_fail.should == 'password_fail'
+    prophet.access_token_fail.should == 'token_fail'
     prophet.rerun_on_source_change.should be(false)
     prophet.rerun_on_target_change.should be(false)
   end

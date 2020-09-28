@@ -1,6 +1,6 @@
 Prophet
 ==========
-[![Build Status](https://secure.travis-ci.org/b4mboo/prophet.png)](https://secure.travis-ci.org/b4mboo/prophet)
+[![Build Status](https://secure.travis-ci.org/SUSE/prophet.png)](https://secure.travis-ci.org/SUSE/prophet)
 
 Loops through open pull requests on a GitHub hosted repository and runs your code
 (i.e. tests) on the merged branch. After the run has finished, Prophet will
@@ -92,14 +92,14 @@ options like this:
 
       # Custom GitHub (GH) username/password to use for commenting on a successful run.
       # These credentials are also used for setting the status of the pull request.
-      config.username = 'foo-success'
-      config.password = 'bar'
+      config.username_pass = 'foo-success'
+      config.access_token_pass = 'bar'
 
       # Custom GH credentials for commenting on failing runs.
       # NOTE: If you specify two different accounts with different avatars,
       # it's a lot easier to spot failing runs at first glance.
       config.username_fail = 'foo-fail'
-      config.password_fail = 'baz'
+      config.access_token_fail = 'baz'
 
       # Specify when to run your code.
       # By default your code will run every time either the pull request or its
@@ -146,36 +146,20 @@ options like this:
 
     end
 
-If you don't specify anything (or don't even create an initializer), Prophet
-would fall back to its defaults, thereby trying to take the username/password
-from git config. To set or change these values you can use the following
-commands:
-
-    git config --global github.login your_github_login_1234567890
-    git config --global github.password your_github_password_1234567890
-
 Prophet runs `git gc` after every run to clean up potential remains and start
 the garbage collector. If you are making heavy use of Prophet, think about
 running something like `git gc --aggressive --prune=now` every now and then.
 
 
-Thanks
+Locally Testing Prophet with Docker
 ------
 
-A big "Thank you" goes out to Konstantin Haase (rkh / @konstantinhaase) who
-told us about this idea at Railsberry 2012 in Krakow.
-
-    http://www.youtube.com/watch?v=YFzloW8F-nE
-
-If you are using Prophet to run your tests, it therefore only mimics one of
-TravisCI's features (to a certain degree at least). If you want the full
-experience, go to
-
-    http://travis-ci.org
-
-and sign in, using your GitHub account.
-
-Prophet is getting tested with Travis, too.
-
-    https://secure.travis-ci.org/b4mboo/prophet
-
+1. Copy `options.yml.example` to `options.yml` and fill it with the correct values.
+2. Build the `prophet` container:
+    ```
+    docker build -t prophet .
+    ```
+2. Run the `prophet` container:
+    ```
+    docker run --rm -it --mount type=bind,source=$(pwd)/options.yml,target=/prophet/options.yml -v $SSH_AUTH_SOCK:/ssh-agent --env SSH_AUTH_SOCK=/ssh-agent prophet
+    ```

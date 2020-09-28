@@ -3,10 +3,10 @@ require 'open3'
 
 class Prophet
 
-  attr_accessor :username,
-                :password,
+  attr_accessor :username_pass,
+                :access_token_pass,
                 :username_fail,
-                :password_fail,
+                :access_token_fail,
                 :rerun_on_source_change,
                 :rerun_on_target_change,
                 :prepare_block,
@@ -100,11 +100,10 @@ class Prophet
   end
 
   def configure
+    self.username_fail ||= self.username_pass
+    self.access_token_fail ||= self.access_token_pass
+
     # Set default fall back values for options that aren't set.
-    self.username ||= git_config['github.login']
-    self.password ||= git_config['github.password']
-    self.username_fail ||= self.username
-    self.password_fail ||= self.password
     self.rerun_on_source_change = true if self.rerun_on_source_change.nil?
     self.rerun_on_target_change = true if self.rerun_on_target_change.nil?
     self.reuse_comments = false if self.reuse_comments.nil?
@@ -119,22 +118,17 @@ class Prophet
     # Find environment (tasks, project, ...).
     self.prepare_block ||= lambda {}
     self.exec_block ||= lambda { `rake` }
-    @github = connect_to_github
-    @github_fail = if self.username == self.username_fail
-      @github
-    else
-      connect_to_github self.username_fail, self.password_fail
-    end
+    @github = connect_to_github(access_token: access_token_pass)
+    @github_fail = connect_to_github(access_token: access_token_fail)
   end
 
-  def connect_to_github(user = self.username, pass = self.password)
-    github = Octokit::Client.new(
-      :login => user,
-      :password => pass
-    )
+  def connect_to_github(access_token:)
+    github = Octokit::Client.new(access_token: access_token)
+
     # Check user login to GitHub.
     github.login
-    logger.info "Successfully logged into GitHub with user '#{user}'."
+    logger.info "Successfully logged into GitHub with user '#{github.user.login}'."
+
     # Ensure the user has access to desired project.
     # NOTE: All three variants should work:
     # 'ssh://git@github.com:user/project.git'
@@ -146,7 +140,7 @@ class Prophet
       logger.info "Successfully accessed GitHub project '#{@project}'"
       github
     rescue Octokit::Unauthorized => e
-      logger.error "Unable to access GitHub project with user '#{user}':\n#{e.message}"
+      logger.error "Unable to access GitHub project with user '#{github.user}':\n#{e.message}"
       abort
     end
   end
@@ -172,7 +166,7 @@ class Prophet
       # Compare current sha ids of target and source branch with those from the last test run.
       @request.target_head_sha = @github.commits(@project).first.sha
       comments = @github.issue_comments(@project, @request.id)
-      comments = comments.select { |c| [username, username_fail].include?(c.user.login) }.reverse
+      comments = comments.select { |c| [username_pass, username_fail].include?(c.user.login) }.reverse
       comments.each do |comment|
         @request.comment = comment if /Merged ([\w]+) into ([\w]+)/.match(comment.body)
       end
